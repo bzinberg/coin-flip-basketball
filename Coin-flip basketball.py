@@ -17,7 +17,15 @@
 #
 # Sorry for the filler subsection headings, I had to add them to make collapsing and expanding cells work.
 
-# ## Main prose
+# ## Question
+#
+# In the game of coin-flip basketball, an odd number $n$ of (independent, fair) coins are placed on the court and flipped in sequence.  For each heads, the home team scores a point; for each tails, the away team scores a point.  The game ends when one team reaches more than $n/2$ points.
+#
+# In high-profile matches, if (and only if) at any point before the end of the game, the home team has a 90% or greater chance of winning, a siren will sound.  In the junior league, the 90% threshold is changed to 75%.
+#
+# We are interested in two high-profile games of coin-flip basketball: the junior league championship which has $n=5$, and the major league championship which has $n=101$.  Given that the siren _does_ sound in each of the two games, what is the probability that that the home team wins the junior league championship?  The major league championship?
+
+# ## Solution
 #
 # For each $n$, let $a(n)$ denote the largest integer $k$ such that
 # $$
@@ -91,11 +99,11 @@ for (n, k) in enumerate(a):
 # w \geq 51 - a(101 - w - \ell).
 # $$
 
-# Since $a(n)$ is a non-decreasing function of $n$, we have that for any fixed value of $w$, there is some $\ell_{\text{NR}}(w)$ such that the above holds if and only if $0 \leq \ell < \ell_{\text{NR}}(w)$.  The "NR" stands for "no report," as for any $w, \ell < 51$, a game state with $w$ wins and $\ell$ losses will _not_ cause an ESPN report if and only if $\ell \geq \ell_{\text{NR}}(w)$.
+# Since $a(n)$ is a non-decreasing function of $n$, we have that for any fixed value of $w$, there is some $\ell_{\text{NS}}(w)$ such that the above holds if and only if $0 \leq \ell < \ell_{\text{NS}}(w)$.  The "NS" stands for "no siren," as for any $w, \ell < 51$, a game state with $w$ wins and $\ell$ losses will _not_ cause an siren if and only if $\ell \geq \ell_{\text{NS}}(w)$.
 
-# ### Computing $\ell_{\text{NR}}$
+# ### Computing $\ell_{\text{NS}}$
 
-def compute_ℓ_nr(a):
+def compute_ℓ_ns(a):
     n_max = len(a) - 1
     n_maj = n_max // 2 + 1
     return [next(filter(lambda ℓ: w < n_maj - a[n_max - w - ℓ],
@@ -105,44 +113,42 @@ def compute_ℓ_nr(a):
 
 
 a = compute_a(101, threshold_frac=0.1)
-ℓ_nr = compute_ℓ_nr(a)
+ℓ_ns = compute_ℓ_ns(a)
 
 # ## Back to prose
 
 # Now, we have
 # $$
 # \begin{aligned}
-# \Pr\left[ \text{win} \ \middle|\ \text{ESPN report} \right]
+# \Pr\left[ \text{win} \ \middle|\ \text{siren} \right]
 # &=
 # \frac{
 #   \Pr\left[
-#     \text{ESPN report \& win}
+#     \text{siren \& win}
 #   \right]
 # }{
-#   \Pr\left[ \text{ESPN report} \right]
+#   \Pr\left[ \text{siren} \right]
 # } \\[1em]
 # &=
 # \frac{
 #   \Pr[\text{win}]
 #   - \Pr\left[
-#     \text{no ESPN report \& win}
+#     \text{no siren \& win}
 #   \right]
 # }{
-#   1 - \Pr\left[ \text{no ESPN report \& win} \right] - \Pr\left[ \text{no ESPN report \& lose} \right]
+#   1 - \Pr\left[ \text{no siren \& win} \right] - \Pr\left[ \text{no siren \& lose} \right]
 # }.
 # \end{aligned}
 # $$
 #
-# (Here we are treating "ESPN report" as a shorthand for "there was at least one point before the end of the game at which the home team had a $\geq 90\%$ chance of winning."  That is, conditioned on a given sequence of outcomes, the ESPN report is not a random event; it happens if and only if there exists such a point.)
-#
 # Let $b(w, \ell)$ denote the number of possible sequences of outcomes for the first $w + \ell$ coin flip results such that:
 # * The home team wins $w$ flips and loses $\ell$ flips
 # * The sequence does not end in a loss (in other words, either the sequence ends in a win or $w = \ell = 0$)
-# * The conditions for an ESPN report do not happen during the first $w + \ell$ flips.
+# * The conditions for an siren do not happen during the first $w + \ell$ flips.
 #
 # Then, we have
 # $$
-# \Pr\left[ \text{no ESPN report \& win} \right]
+# \Pr\left[ \text{no siren \& win} \right]
 # =
 # \sum_{0 \leq \ell < 51}
 #   \frac{b(51, \ell)}{2^{51 + \ell}}
@@ -150,24 +156,24 @@ a = compute_a(101, threshold_frac=0.1)
 #
 # and similarly,
 # $$
-# \Pr\left[ \text{no ESPN report \& lose} \right]
+# \Pr\left[ \text{no siren \& lose} \right]
 # =
 # \sum_{\substack{0 \leq w < 51 \\
-#                 \ell_{\text{NR}}(w) \leq \ell_1 < 51}}
+#                 \ell_{\text{NS}}(w) \leq \ell_1 < 51}}
 #   \frac{b(w, \ell_1)}{2^{w + 51}}.
 # $$
 # In the latter equation, the summand is the probability that:
 # * the home team loses overall, with $w < 51$ flips won at the end of the game;
-# * there is no ESPN report;
+# * there is no siren;
 # * the home team loses $\ell_1$ flips before their last win (or if $w=0$, then $\ell_1=0$), then loses the remaining $51 - \ell_1$ flips.
 
 # ### Computing $b$
 
 # There are exponentially many paths to count, but we can compute $b$ in quadratic time using the recurrence
 # $$
-# b(w + 1,\ \ell) = \sum_{j = \ell_{\text{NR}}(w)}^{j=\ell} b(w, j) \qquad (\ell \geq \ell_{\text{NR}}(w+1))
+# b(w + 1,\ \ell) = \sum_{j = \ell_{\text{NS}}(w)}^{j=\ell} b(w, j) \qquad (\ell \geq \ell_{\text{NS}}(w+1))
 # $$
-# which holds for each $w < 51$ and each $\ell \geq \ell_{\text{NR}}(w+1)$.  In prose, the recurrence says that the way to have $\ell$ losses (and no ESPN report) when you win your $(w+1)$st flip, is to have $j$ losses (and no ESPN report) when you win your $w$th flip for some $j \geq \ell_{\text{NR}}(w)$, then lose $\ell - j$ flips, then win your $(w+1)$st flip.
+# which holds for each $w < 51$ and each $\ell \geq \ell_{\text{NS}}(w+1)$.  In prose, the recurrence says that the way to have $\ell$ losses (and no siren) when you win your $(w+1)$st flip, is to have $j$ losses (and no siren) when you win your $w$th flip for some $j \geq \ell_{\text{NS}}(w)$, then lose $\ell - j$ flips, then win your $(w+1)$st flip.
 
 # +
 import numpy as np
@@ -176,16 +182,16 @@ R_zero = Rational(0)
 R_one = Rational(1)
 R_two = Rational(2)
 
-def compute_b(ℓ_nr):
-    n_maj = len(ℓ_nr) - 1
+def compute_b(ℓ_ns):
+    n_maj = len(ℓ_ns) - 1
     b = np.tile(R_zero, (n_maj + 1, n_maj))
     b[0, 0] = R_one
     for w in range(1, n_maj + 1):
         b[w, :] = np.cumsum(b[w-1, :])
-        # For w = n_maj, ESPN report never happens no matter how
-        # many many losses there have been because the game is over
+        # For w = n_maj, siren never happens no matter how many
+        # losses there have been because the game is over
         if w != n_maj:
-            b[w, :ℓ_nr[w]] = R_zero
+            b[w, :ℓ_ns[w]] = R_zero
     return b
 
 
@@ -195,28 +201,28 @@ def compute_b(ℓ_nr):
 
 # +
 import collections
-Probs = collections.namedtuple("Probs", ["p_win_given_report",
-                                         "p_no_report_and_win",
-                                         "p_no_report_and_lose"])
+Probs = collections.namedtuple("Probs", ["p_win_given_siren",
+                                         "p_no_siren_and_win",
+                                         "p_no_siren_and_lose"])
 
 def compute_probs(num_coins, *, threshold_frac):
     a = compute_a(num_coins, threshold_frac=threshold_frac)
-    ℓ_nr = compute_ℓ_nr(a)
-    b = compute_b(ℓ_nr)
+    ℓ_ns = compute_ℓ_ns(a)
+    b = compute_b(ℓ_ns)
 
-    n_maj = len(ℓ_nr) - 1
+    n_maj = len(ℓ_ns) - 1
     p_win = R_one / 2
-    p_no_report_and_win = (np.sum(b[n_maj, :]
-                           / R_two**(n_maj + np.arange(n_maj))))
-    p_no_report_and_lose = (np.sum(b[:-1, :]
-                            / np.reshape(R_two**(n_maj + np.arange(n_maj)),
+    p_no_siren_and_win = (np.sum(b[n_maj, :]
+                          / R_two**(n_maj + np.arange(n_maj))))
+    p_no_siren_and_lose = (np.sum(b[:-1, :]
+                           / np.reshape(R_two**(n_maj + np.arange(n_maj)),
                                          (-1, 1))))
-    p_win_given_report = ((p_win - p_no_report_and_win)
-                          / (1 - p_no_report_and_win - p_no_report_and_lose))
+    p_win_given_siren = ((p_win - p_no_siren_and_win)
+                         / (1 - p_no_siren_and_win - p_no_siren_and_lose))
 
-    return Probs(p_win_given_report=p_win_given_report,
-                 p_no_report_and_win=p_no_report_and_win,
-                 p_no_report_and_lose=p_no_report_and_lose)
+    return Probs(p_win_given_siren=p_win_given_siren,
+                 p_no_siren_and_win=p_no_siren_and_win,
+                 p_no_siren_and_lose=p_no_siren_and_lose)
 
 
 # -
