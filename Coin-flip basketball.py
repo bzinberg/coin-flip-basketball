@@ -39,7 +39,7 @@
 # Looking at two consecutive rows of Pascal's triangle, we obtain the identity
 # $$
 # \sum_{0 \leq i < k} \binom{n+1}{i} =
-# 2 \left( \sum_{0 \leq i < k} \binom{n}{i} \right) - \binom{n}{k}.
+# 2 \left( \sum_{0 \leq i < k} \binom{n}{i} \right) - \binom{n}{k-1}.
 # $$
 # This allows us to efficiently compute $a(n)$ for all $n \leq n_{\max}$, for a given $n_{\max}$, as the sums involved for a new value of $n$ can reuse work from smaller values of $n$.
 
